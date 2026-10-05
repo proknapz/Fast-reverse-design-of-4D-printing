@@ -258,14 +258,14 @@ with tf.Session(config=config) as sess:
         average_ADSE = np.mean(ADSE_data)
         average_ACSE = np.mean(ACSE_data)
 
-        # saver.save(sess, './model_weights_SEP_CNN/model_weights_iteration' + str(iteration) + '.ckpt')
+        saver.save(sess, './model_weights_SEP_CNN/model_weights_iteration' + str(iteration) + '.ckpt')
 
         # '''=========== Testing the  Net  ======== '''
         test_number_steps = 2000
         for ii in range(test_number_steps):
 
             predicting_data, total_loss_test, loss1_test, loss2_test, loss3_test = sess.run(
-                [output_predict, Total_loss, loss1, loss2, loss3],
+                [output_predict, total_loss, loss1, loss2, loss3],
                 feed_dict={x: test_inputs, y: test_outputs})
 
             if ii % 50 == 0:

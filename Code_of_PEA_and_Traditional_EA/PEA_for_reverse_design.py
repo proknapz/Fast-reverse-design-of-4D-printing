@@ -274,13 +274,13 @@ populations_size = 2000
 with tf.Session(config=config) as sess:
 
     sess.run(tf.global_variables_initializer())
-    saver.restore(sess, './model_weights_SEP_CNN/model_weights_iteration80.ckpt')
+    saver.restore(sess, './model_weights_2D_ResNet/model_weights_2D_ResNet/model.ckpt')
 
     target_output_data = pd.read_csv('./target_shape/target_test.csv', header=None)
     target_output_data = target_output_data.to_numpy()
     times_per_iteration = []
 
-    for ii in range(1000):
+    for ii in range(10):
         start_time = time.time()
         print('$$$$$$$$$$$$$$$$-------frequency------$$$$$$$$$$$$$---------------------------------', str(ii))
         skip = False
