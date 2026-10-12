@@ -1,10 +1,14 @@
 # FreiHAND spatial representation (Person 2)
 
-This folder contains separate Person 1 ingestion/normalization and Person 2 spatial-encoder work; neither modifies the Wang SEP-CNN/ResNet/PEA baseline. The local FreiHAND training data has now been inspected on 50 evenly spaced samples: each inspected sample had 778 vertices and 21 keypoints, and all 50 passed normalization round-trip and prototype voxel-encoding checks. Faces/topology are not present in the loaded annotation files, so voxel surface occupancy is from points only. The measured report is `results/real_sample_inspection.md`; this is geometry-pipeline validation, not clinical validation.
+This folder contains separate Person 1 ingestion/normalization and Person 2 spatial-encoder work; neither modifies the Wang SEP-CNN/ResNet/PEA baseline. The local FreiHAND training data has now been inspected on 50 evenly spaced samples: each inspected sample had 778 vertices and 21 keypoints, and all 50 passed normalization round-trip and prototype voxel-encoding checks. 
+
+**NEW: MANO topology integration** now enables complete surface representation with 1538 triangular faces for orthosis design workflows.
+
+The measured report is `results/real_sample_inspection.md`; this is geometry-pipeline validation, not clinical validation.
 
 ## Person 1 geometry ingestion
 
-The FreiHAND-specific annotation reader follows the annotation layout and sample/version mapping in the [official reference repository](https://github.com/lmb-freiburg/freihand). Training records include aligned keypoints, vertices, MANO parameters, camera intrinsics, and a reference-bone scale. The actual files inspected contain 778 vertices and 21 keypoints per sample. Triangle faces are not supplied by these arrays and are left `None`.
+The FreiHAND-specific annotation reader follows the annotation layout and sample/version mapping in the [official reference repository](https://github.com/lmb-freiburg/freihand). Training records include aligned keypoints, vertices, MANO parameters, camera intrinsics, and a reference-bone scale. The actual files inspected contain 778 vertices and 21 keypoints per sample. Triangle faces can now be loaded from MANO models for complete surface topology.
 
 ### Download and unpack the real dataset
 
@@ -34,7 +38,9 @@ The script prints the training dataset root. Use that directory for real-data vi
 
 ```python
 from FreiHAND.data_loader import FreiHANDDataset
+from pathlib import Path
 
+# Without MANO topology (original behavior)
 dataset = FreiHANDDataset(
     dataset_root=r"path\to\the\folder\containing\training_K.json",
     split="training",
@@ -42,22 +48,45 @@ dataset = FreiHANDDataset(
     units="m",
 )
 raw_geometry = dataset.load_sample(0)
+# raw_geometry.faces is None
+
+# With MANO topology (NEW - requires MANO_RIGHT.pkl from https://mano.is.tue.mpg.de/)
+dataset_with_mano = FreiHANDDataset(
+    dataset_root=r"path\to\the\folder\containing\training_K.json",
+    split="training",
+    image_version="gs",
+    units="m",
+    mano_pkl_path=Path(r"path\to\MANO_RIGHT.pkl"),  # NEW parameter
+)
+complete_geometry = dataset_with_mano.load_sample(0)
+# complete_geometry.vertices: (778, 3)
+# complete_geometry.keypoints: (21, 3)
+# complete_geometry.faces: (1538, 3) ← NEW!
 ```
 
-For the inspected training version, `raw_geometry.vertices` is `(778, 3)`, `raw_geometry.keypoints` is `(21, 3)`, and `raw_geometry.faces` is `None`. Metadata includes the `(3, 3)` camera intrinsic matrix, MANO parameter row, and provided reference-bone scale in meters. The official evaluator computes error in stored XYZ coordinates and multiplies by 100 to report centimeters, establishing meters as the source unit. Locally, `training_scale` exactly matched `norm(keypoints[9] - keypoints[10])` across all 32,560 training records.
+For the inspected training version, `raw_geometry.vertices` is `(778, 3)`, `raw_geometry.keypoints` is `(21, 3)`, and `raw_geometry.faces` is `None` (or loaded from MANO if available). Metadata includes the `(3, 3)` camera intrinsic matrix, MANO parameter row, and provided reference-bone scale in meters. The official evaluator computes error in stored XYZ coordinates and multiplies by 100 to report centimeters, establishing meters as the source unit. Locally, `training_scale` exactly matched `norm(keypoints[9] - keypoints[10])` across all 32,560 training records.
 
-For generic geometry or a future MANO adapter, `load_geometry_npz` reads a non-pickled archive containing optional `vertices`, `keypoints`, and `faces` arrays:
+For generic geometry or MANO topology, `load_geometry_npz` reads a non-pickled archive containing optional `vertices`, `keypoints`, and `faces` arrays:
 
 ```python
 from FreiHAND.data_loader import load_geometry_npz
 from FreiHAND.normalize_hand import normalize_hand, denormalize_hand
+from pathlib import Path
 
+# Load NPZ with optional MANO topology
 raw_geometry = load_geometry_npz(
-    r"path\to\sample.npz", sample_id="sample-001", units="mm"
+    r"path\to\sample.npz", 
+    sample_id="sample-001", 
+    units="mm",
+    mano_pkl_path=Path(r"path\to\MANO_RIGHT.pkl"),  # NEW parameter (optional)
 )
 normalized_geometry, transform = normalize_hand(raw_geometry)
 restored_geometry = denormalize_hand(normalized_geometry, transform)
 ```
+
+### MANO Topology Integration
+
+Triangle face topology can now be loaded from MANO hand models to provide complete surface representation for orthosis design. See [MANO_INTEGRATION.md](./MANO_INTEGRATION.md) for setup and usage instructions.
 
 The current normalizer centers the bounds of all provided points, applies one uniform scale, and preserves axes without rotation or mirroring. FreiHAND points are best interpreted as camera-relative from the official intrinsic-matrix projection code; formal origin, axis signs, and handedness remain unspecified. It stores the center, inverse scale, identity rotation, and source-unit label; the original reference-bone `hand_scale` remains in `metadata`. The agreed Person 1 handoff policy is to treat raw meter-valued geometry as authoritative and use bounding-box-normalized geometry only as a separate, reversible model-input copy. Its `[-1, 1]` bounds align with Person 2's draft encoder interface. Do not infer physical orthosis dimensions from normalized coordinates alone.
 

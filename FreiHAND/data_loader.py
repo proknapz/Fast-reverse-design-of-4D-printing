@@ -5,6 +5,9 @@ FreiHAND-specific reader follows the annotation layout in the official
 ``lmb-freiburg/freihand`` reference code and has been exercised against the
 official training annotations. Generic ``.npz`` loading provides the stable
 vertices/keypoints/faces handoff format for downstream geometry processing.
+
+MANO topology integration: optionally loads face connectivity from MANO models
+to provide complete surface topology for downstream processing.
 """
 
 import json
@@ -16,6 +19,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 from numpy.typing import NDArray
+
+from . import mano_loader
 
 
 FLOAT_DTYPE = np.float64
@@ -52,12 +57,16 @@ class FreiHANDDataset:
     The official evaluation code computes errors in the stored XYZ values and
     converts them to centimeters by multiplying by 100, so the coordinates are
     in meters. The caller may override this label for a nonstandard conversion.
+
+    Optional MANO model integration provides face topology for complete surface
+    representation. See mano_loader module for setup instructions.
     """
 
     root: Path
     split: str = "training"
     image_version: str = "gs"
     units: str = FREIHAND_UNITS
+    mano_pkl_path: Optional[Path] = None
     _annotations: Optional[Tuple[List[Any], List[Any], List[Any]]] = field(
         default=None, init=False, repr=False
     )
@@ -65,6 +74,9 @@ class FreiHANDDataset:
         default=None, init=False, repr=False
     )
     _scales: Optional[List[Any]] = field(default=None, init=False, repr=False)
+    _mano_faces: Optional[NDArray[np.int64]] = field(
+        default=None, init=False, repr=False
+    )
 
     def __post_init__(self) -> None:
         self.root = Path(self.root)
@@ -76,6 +88,9 @@ class FreiHANDDataset:
             )
         if self.split == "evaluation" and self.image_version != "gs":
             raise ValueError("evaluation supports only the 'gs' image version")
+        if self.mano_pkl_path is not None:
+            self.mano_pkl_path = Path(self.mano_pkl_path)
+            self._mano_faces = mano_loader.load_mano_faces(self.mano_pkl_path)
 
     def _load_annotations(self) -> Tuple[List[Any], List[Any], List[Any]]:
         if self._annotations is not None:
@@ -261,10 +276,26 @@ class FreiHANDDataset:
         ):
             raise ValueError("hand scale at index {} must be a positive scalar".format(index))
 
+        faces = None
+        geometry_note = "Vertices and keypoints are loaded from aligned annotations; face topology is not supplied by this reader."
+        if self._mano_faces is not None:
+            faces = self._mano_faces.copy()
+            if vertices is not None:
+                is_valid, validation_msg = mano_loader.validate_faces_with_vertices(
+                    faces, vertices, sample_id=f"{self.split}:{index:08d}"
+                )
+                if not is_valid:
+                    raise ValueError(validation_msg)
+            geometry_note = (
+                "Vertices and keypoints are loaded from aligned annotations; "
+                "face topology is supplied from MANO model."
+            )
+
         return HandGeometry(
             sample_id="{}:{:08d}".format(self.split, index),
             vertices=vertices,
             keypoints=keypoints,
+            faces=faces,
             units=self.units,
             metadata={
                 "annotation_index": int(index),
@@ -288,10 +319,7 @@ class FreiHANDDataset:
                     "the dataset coordinate unit is therefore meters. Normalized "
                     "XYZ is dimensionless; retain its transform."
                 ),
-                "geometry_note": (
-                    "Vertices and keypoints are loaded from aligned annotations; "
-                    "face topology is not supplied by this reader."
-                ),
+                "geometry_note": geometry_note,
             },
         )
 
@@ -358,12 +386,15 @@ def load_geometry_npz(
     path: Path,
     sample_id: Optional[str] = None,
     units: str = "unknown",
+    mano_pkl_path: Optional[Path] = None,
 ) -> HandGeometry:
     """Load the documented generic geometry interchange format from ``.npz``.
 
     Required/optional arrays are ``vertices`` (optional if keypoints exist),
     ``keypoints`` (optional if vertices exist), and ``faces`` (optional).
     Metadata is supplied by the caller; pickle-based object arrays are disabled.
+
+    Optionally loads face topology from a MANO model if mano_pkl_path is provided.
     """
     archive_path = Path(path)
     if not archive_path.is_file():
@@ -378,13 +409,20 @@ def load_geometry_npz(
                         sorted(unexpected)
                     )
                 )
+            geometry_faces = archive["faces"] if "faces" in archive else None
+            if geometry_faces is None and mano_pkl_path is not None:
+                geometry_faces = mano_loader.load_mano_faces(mano_pkl_path)
+
             geometry = HandGeometry(
                 sample_id=sample_id or archive_path.stem,
                 vertices=archive["vertices"] if "vertices" in archive else None,
                 keypoints=archive["keypoints"] if "keypoints" in archive else None,
-                faces=archive["faces"] if "faces" in archive else None,
+                faces=geometry_faces,
                 units=units,
-                metadata={"source_archive": str(archive_path)},
+                metadata={
+                    "source_archive": str(archive_path),
+                    "mano_model_source": str(mano_pkl_path) if mano_pkl_path else None,
+                },
             )
     except (OSError, ValueError) as error:
         raise ValueError(
