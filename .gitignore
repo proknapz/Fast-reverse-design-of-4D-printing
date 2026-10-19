@@ -2,3 +2,5 @@
 *.pyd
 *.pyi
 /.venv
+*.tex
+*.pdf
