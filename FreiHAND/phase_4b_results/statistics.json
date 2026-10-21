@@ -1,0 +1,52 @@
+[
+  {
+    "generation": 0,
+    "population_size": 30,
+    "avg_voxel_count": 129.53333333333333,
+    "avg_support": 0.8552688036015456,
+    "avg_movement": 0.49451567841028,
+    "avg_efficiency": 0.6761666666666668,
+    "avg_fabricability": 1.0,
+    "pareto_front_size": 9
+  },
+  {
+    "generation": 1,
+    "population_size": 30,
+    "avg_voxel_count": 125.7,
+    "avg_support": 0.8580725950983668,
+    "avg_movement": 0.49660069401306595,
+    "avg_efficiency": 0.68575,
+    "avg_fabricability": 1.0,
+    "pareto_front_size": 11
+  },
+  {
+    "generation": 2,
+    "population_size": 30,
+    "avg_voxel_count": 110.46666666666667,
+    "avg_support": 0.8620069289670462,
+    "avg_movement": 0.4980079543806817,
+    "avg_efficiency": 0.7238333333333333,
+    "avg_fabricability": 1.0,
+    "pareto_front_size": 6
+  },
+  {
+    "generation": 3,
+    "population_size": 30,
+    "avg_voxel_count": 104.56666666666666,
+    "avg_support": 0.861196155226441,
+    "avg_movement": 0.4960664364001605,
+    "avg_efficiency": 0.7385833333333333,
+    "avg_fabricability": 1.0,
+    "pareto_front_size": 6
+  },
+  {
+    "generation": 4,
+    "population_size": 30,
+    "avg_voxel_count": 101.46666666666667,
+    "avg_support": 0.8630214634823853,
+    "avg_movement": 0.49776361931839413,
+    "avg_efficiency": 0.7463333333333334,
+    "avg_fabricability": 1.0,
+    "pareto_front_size": 10
+  }
+]
