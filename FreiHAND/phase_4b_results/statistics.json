@@ -2,51 +2,51 @@
   {
     "generation": 0,
     "population_size": 30,
-    "avg_voxel_count": 132.6,
-    "avg_support": 0.8574156778526482,
-    "avg_movement": 0.48814303725968944,
-    "avg_efficiency": 0.6685,
+    "avg_voxel_count": 126.76666666666667,
+    "avg_support": 0.8543045612869478,
+    "avg_movement": 0.4992934984358249,
+    "avg_efficiency": 0.6830833333333332,
     "avg_fabricability": 1.0,
-    "pareto_front_size": 4
+    "pareto_front_size": 11
   },
   {
     "generation": 1,
     "population_size": 30,
-    "avg_voxel_count": 111.7,
-    "avg_support": 0.8589554106964242,
-    "avg_movement": 0.4873577145628694,
-    "avg_efficiency": 0.72075,
+    "avg_voxel_count": 97.73333333333333,
+    "avg_support": 0.8570828899417001,
+    "avg_movement": 0.4990621468765159,
+    "avg_efficiency": 0.7556666666666666,
     "avg_fabricability": 1.0,
-    "pareto_front_size": 8
+    "pareto_front_size": 10
   },
   {
     "generation": 2,
     "population_size": 30,
-    "avg_voxel_count": 89.23333333333333,
-    "avg_support": 0.8608214077322642,
-    "avg_movement": 0.48834109121658614,
-    "avg_efficiency": 0.7769166666666666,
+    "avg_voxel_count": 82.03333333333333,
+    "avg_support": 0.856859155663757,
+    "avg_movement": 0.49492604994275574,
+    "avg_efficiency": 0.7949166666666666,
     "avg_fabricability": 1.0,
-    "pareto_front_size": 12
+    "pareto_front_size": 11
   },
   {
     "generation": 3,
     "population_size": 30,
-    "avg_voxel_count": 81.3,
-    "avg_support": 0.8651848628109045,
-    "avg_movement": 0.48730723856126057,
-    "avg_efficiency": 0.79675,
+    "avg_voxel_count": 77.83333333333333,
+    "avg_support": 0.8567048563017345,
+    "avg_movement": 0.4932224064339997,
+    "avg_efficiency": 0.8054166666666667,
     "avg_fabricability": 1.0,
-    "pareto_front_size": 19
+    "pareto_front_size": 11
   },
   {
     "generation": 4,
     "population_size": 30,
-    "avg_voxel_count": 72.6,
-    "avg_support": 0.8646423727278295,
-    "avg_movement": 0.48781269952827666,
-    "avg_efficiency": 0.8184999999999999,
+    "avg_voxel_count": 69.83333333333333,
+    "avg_support": 0.8601421929621654,
+    "avg_movement": 0.4915461488469705,
+    "avg_efficiency": 0.8254166666666668,
     "avg_fabricability": 1.0,
-    "pareto_front_size": 11
+    "pareto_front_size": 16
   }
 ]

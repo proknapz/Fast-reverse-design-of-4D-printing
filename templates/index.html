@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hand photo → point cloud &amp; splint (demo)</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <main class="layout">
+    <header>
+      <h1>Hand photo to splint</h1>
+      <p class="disclaimer">
+        Demonstration only — not a medical device and not for clinical use.
+      </p>
+    </header>
+
+    <form id="upload-form" class="panel">
+      <label>
+        Hand photo (JPG or PNG, max 10 MB)
+        <input type="file" name="photo" accept=".jpg,.jpeg,.png,image/jpeg,image/png" required />
+      </label>
+      <label>
+        Hand length, wrist to middle fingertip (cm)
+        <input type="number" name="hand_length_cm" min="8" max="28" step="0.1" value="18" />
+      </label>
+      <label>
+        Splint side
+        <select name="side">
+          <option value="dorsal" selected>Dorsal (back of hand)</option>
+          <option value="volar">Volar (palm side)</option>
+        </select>
+      </label>
+      <label class="checkbox">
+        <input type="checkbox" name="finger_extension" />
+        Finger-extension (cover to PIP joints)
+      </label>
+      <button type="submit">Generate</button>
+      <p id="status" class="status" role="status"></p>
+    </form>
+
+    <section class="viewer-wrap">
+      <div class="toggles">
+        <label><input type="checkbox" id="toggle-cloud" checked /> Point cloud</label>
+        <label><input type="checkbox" id="toggle-splint" checked /> Splint</label>
+        <a id="dl-ply" class="btn disabled" href="#" download="cloud.ply">Download PLY</a>
+        <a id="dl-stl" class="btn disabled" href="#" download="splint.stl">Download STL</a>
+      </div>
+      <div id="spinner" class="spinner hidden" aria-hidden="true"></div>
+      <canvas id="viewport"></canvas>
+    </section>
+  </main>
+  <script type="module" src="{{ url_for('static', filename='js/viewer.js') }}"></script>
+</body>
+</html>
