@@ -5,7 +5,7 @@ from __future__ import annotations
 import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Tuple, Dict
+from typing import Any, Tuple, Dict, Optional
 
 import cv2
 import numpy as np
@@ -58,6 +58,7 @@ class HandLandmarks:
     normalized: np.ndarray  # (21, 3) x, y, z from MediaPipe
     mask: np.ndarray  # uint8 0/255
     handedness: str = "Unknown"
+    confidence: Optional[float] = None
     names: Tuple[str, ...] = field(default_factory=lambda: LANDMARK_NAMES)
 
     @property
@@ -83,6 +84,7 @@ class HandLandmarks:
             )
         return {
             "handedness": self.handedness,
+            "confidence": self.confidence,
             "image_size": {"width": self.width, "height": self.height},
             "landmarks": points,
         }
@@ -108,9 +110,9 @@ def extract_landmarks(image_path: str) -> HandLandmarks:
         ) from exc
 
     if hasattr(mp, "solutions"):
-        points_px, normalized, handedness = _extract_solutions(mp, image_rgb)
+        points_px, normalized, handedness, confidence = _extract_solutions(mp, image_rgb)
     else:
-        points_px, normalized, handedness = _extract_tasks(mp, image_rgb)
+        points_px, normalized, handedness, confidence = _extract_tasks(mp, image_rgb)
 
     mask = _mask_from_landmarks(points_px, image_rgb.shape[0], image_rgb.shape[1])
     return HandLandmarks(
@@ -119,10 +121,13 @@ def extract_landmarks(image_path: str) -> HandLandmarks:
         normalized=normalized,
         mask=mask,
         handedness=handedness,
+        confidence=confidence,
     )
 
 
-def _extract_solutions(mp: Any, image_rgb: np.ndarray) -> Tuple[np.ndarray, np.ndarray, str]:
+def _extract_solutions(
+    mp: Any, image_rgb: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray, str, Optional[float]]:
     mp_hands = mp.solutions.hands
     with mp_hands.Hands(
         static_image_mode=True,
@@ -142,9 +147,12 @@ def _extract_solutions(mp: Any, image_rgb: np.ndarray) -> Tuple[np.ndarray, np.n
         points_px[i, 1] = lm.y * h
         normalized[i] = (lm.x, lm.y, lm.z)
     handedness = "Unknown"
+    confidence = None
     if result.multi_handedness:
-        handedness = result.multi_handedness[0].classification[0].label
-    return points_px, normalized, handedness
+        classification = result.multi_handedness[0].classification[0]
+        handedness = classification.label
+        confidence = float(classification.score)
+    return points_px, normalized, handedness, confidence
 
 
 def _ensure_task_model() -> Path:
@@ -161,7 +169,9 @@ def _ensure_task_model() -> Path:
     return _MODEL_PATH
 
 
-def _extract_tasks(mp: Any, image_rgb: np.ndarray) -> Tuple[np.ndarray, np.ndarray, str]:
+def _extract_tasks(
+    mp: Any, image_rgb: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray, str, Optional[float]]:
     from mediapipe.tasks.python import BaseOptions
     from mediapipe.tasks.python.vision import (
         HandLandmarker,
@@ -193,11 +203,13 @@ def _extract_tasks(mp: Any, image_rgb: np.ndarray) -> Tuple[np.ndarray, np.ndarr
         points_px[i, 1] = lm.y * h
         normalized[i] = (lm.x, lm.y, lm.z)
     handedness = "Unknown"
+    confidence = None
     if result.handedness:
         cats = result.handedness[0]
         if cats:
             handedness = cats[0].category_name
-    return points_px, normalized, handedness
+            confidence = float(cats[0].score)
+    return points_px, normalized, handedness, confidence
 
 
 def _mask_from_landmarks(points_px: np.ndarray, height: int, width: int) -> np.ndarray:
